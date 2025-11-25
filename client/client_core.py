@@ -28,3 +28,17 @@ class ClientCore:
                 is_running = False
 
         self.client_socket.close()
+
+    def send_file(self, file_path):
+        import os
+        self.connect()
+        filename = os.path.basename(file_path)
+        # Send filename followed by newline
+        self.client_socket.send((filename + '\n').encode())
+        with open(file_path, 'rb') as f:
+            while True:
+                bytes_read = f.read(4096)
+                if not bytes_read:
+                    break
+                self.client_socket.sendall(bytes_read)
+        self.client_socket.close()
