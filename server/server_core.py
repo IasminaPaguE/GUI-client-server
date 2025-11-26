@@ -64,10 +64,9 @@ class ServerCore:
                 expected_size = None
 
             print(f"Receiving file: {file_name} from {addr}")
-
             file_path = os.path.join(self.save_dir, file_name)
 
-            # ======== 2. Inițializăm colectarea de metrics ========
+            
             start_time = time.time()
             bytes_received = 0
             throughput_samples = []
@@ -75,14 +74,13 @@ class ServerCore:
             ram_samples = []
             last_sample_time = start_time
 
-            # prima valoare măsurată
-            cpu_samples.append(psutil.cpu_percent(interval=None))
-            ram_samples.append(psutil.virtual_memory().percent)
+            process = psutil.Process()
+            cpu_samples.append(process.cpu_percent(interval=None))
+            ram_samples.append(process.memory_percent())
 
-            # interval real (50 ms)
+            
             sample_interval = 0.001
 
-            # ======== 3. Citim fișierul bucăți ========
             with open(file_path, "wb") as f:
                 while True:
                     data = conn.recv(4096)
@@ -102,8 +100,8 @@ class ServerCore:
                         else:
                             current_throughput = 0.0
 
-                        cpu_val = psutil.cpu_percent(interval=None)
-                        ram_val = psutil.virtual_memory().percent
+                        cpu_val = process.cpu_percent(interval=None)
+                        ram_val = process.memory_percent()
 
                         throughput_samples.append(current_throughput)
                         cpu_samples.append(cpu_val)
@@ -111,7 +109,6 @@ class ServerCore:
 
                         last_sample_time = now
 
-                        # 🔴 Actualizare real-time către dashboard
                         if self.metrics_emitter is not None:
                             try:
                                 self.metrics_emitter.realtime_signal.emit(
@@ -122,7 +119,6 @@ class ServerCore:
                             except Exception as e:
                                 print(f"[WARN] realtime emit failed: {e}")
 
-            # ======== 4. Calculăm metrics finale ========
             stop_time = time.time()
             total_transfer_time = stop_time - start_time
 
@@ -159,7 +155,6 @@ class ServerCore:
             print(f"File saved: {file_path}")
             print("Transfer metrics:", metrics.to_dict())
 
-            # 🔴 Trimitem metrics finale către dashboard
             if self.metrics_emitter is not None:
                 try:
                     self.metrics_emitter.metrics_signal.emit(metrics.to_dict())
