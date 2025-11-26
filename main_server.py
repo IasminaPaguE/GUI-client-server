@@ -1,4 +1,3 @@
-
 import sys
 from PyQt5.QtWidgets import QApplication
 from server.server_gui import ServerWindow
