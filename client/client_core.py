@@ -32,9 +32,12 @@ class ClientCore:
     def send_file(self, file_path):
         import os
         self.connect()
-        filename = os.path.basename(file_path)
-        # Send filename followed by newline
-        self.client_socket.send((filename + '\n').encode())
+        file_name = os.path.basename(file_path)
+        file_size = os.path.getsize(file_path)
+        file_type = os.path.splitext(file_path)[1].lower()
+        # Send metadata header: <file_name>|<file_size>|<file_type>\n
+        header = f"{file_name}|{file_size}|{file_type}\n"
+        self.client_socket.sendall(header.encode())
         with open(file_path, 'rb') as f:
             while True:
                 bytes_read = f.read(4096)

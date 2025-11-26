@@ -1,5 +1,6 @@
 #Python files to ignore
 received_files/
+test_threading/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
