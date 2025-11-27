@@ -229,10 +229,6 @@ class ServerWindow(QMainWindow):
         self.ram_curve.setData([])
 
     def update_realtime_charts(self, throughput: float, cpu: float, ram: float):
-        """
-        Chemată din MetricsEmitter.realtime_signal
-        de fiecare dată când ServerCore face sampling.
-        """
         self.throughput_data.append(throughput)
         self.cpu_data.append(cpu)
         self.ram_data.append(ram)
@@ -240,16 +236,13 @@ class ServerWindow(QMainWindow):
 
         x = list(range(len(self.throughput_data)))
 
-        # actualizăm curbele
+        
         self.throughput_curve.setData(x, self.throughput_data)
         self.cpu_curve.setData(x, self.cpu_data)
         self.ram_curve.setData(x, self.ram_data)
 
     def update_final_metrics(self, metrics: dict):
-        """
-        Chemată o singură dată la finalul transferului.
-        metrics este rezultatul lui FileTransferMetrics.to_dict()
-        """
+        
         text_lines = [
             f"File name: {metrics.get('file_name')}",
             f"File size: {metrics.get('file_size')} bytes",

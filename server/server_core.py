@@ -45,7 +45,7 @@ class ServerCore:
 
     def handle_client(self, conn, addr):
         try:
-            # ======== 1. Primim header-ul <filename>|<size>|<type> ========
+            
             header_bytes = b""
             while True:
                 byte = conn.recv(1)
