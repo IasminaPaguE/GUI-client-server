@@ -14,57 +14,16 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSignal, QObject
 
-from server import ServerCore
+from server.server_controller import ServerController
 
 import pyqtgraph as pg
 
 
-class LogEmitter(QObject):
-    log_signal = pyqtSignal(str)
+
+# Emitters moved to server_emitter.py
+from server.server_emitter import LogEmitter, MetricsEmitter
 
 
-class MetricsEmitter(QObject):
-    # dict cu metrics finale (to_dict() din FileTransferMetrics)
-    metrics_signal = pyqtSignal(dict)
-    # throughput(MB/s), cpu(%), ram(%)
-    realtime_signal = pyqtSignal(float, float, float)
-
-
-class ServerThread(threading.Thread):
-    """
-    Thread-ul în care rulează ServerCore ca să nu blocheze GUI-ul.
-    Aici conectăm:
-    - print() -> LogEmitter
-    - ServerCore -> MetricsEmitter
-    """
-    def __init__(self, server_core, log_emitter, metrics_emitter):
-        super().__init__(daemon=True)
-        self.server_core = server_core
-        self.log_emitter = log_emitter
-        self.metrics_emitter = metrics_emitter
-
-    def run(self):
-        # 1. conectăm server_core la metrics_emitter
-        self.server_core.set_metrics_emitter(self.metrics_emitter)
-
-        # 2. monkey patch pentru print() ca să trimită log-uri în GUI
-        original_print = print
-
-        def custom_print(*args, **kwargs):
-            message = ' '.join(map(str, args))
-            self.log_emitter.log_signal.emit(message)
-            original_print(*args, **kwargs)
-
-        import builtins
-        builtins.print = custom_print
-
-        try:
-            self.server_core.start()
-        except Exception as e:
-            self.log_emitter.log_signal.emit(f"[ERROR] {e}")
-        finally:
-            # restaurăm print-ul original
-            builtins.print = original_print
 
 
 class ServerWindow(QMainWindow):
@@ -73,17 +32,8 @@ class ServerWindow(QMainWindow):
         self.setWindowTitle("Server GUI - File Transfer Analyzer")
         self.setGeometry(200, 200, 900, 600)
 
-        # --- instanțe logică server + emitters ---
-        self.server_core = ServerCore()
-        self.log_emitter = LogEmitter()
-        self.metrics_emitter = MetricsEmitter()
-
-        self.server_thread = None
-
-        # conectăm semnalele
-        self.log_emitter.log_signal.connect(self.update_log)
-        self.metrics_emitter.realtime_signal.connect(self.update_realtime_charts)
-        self.metrics_emitter.metrics_signal.connect(self.update_final_metrics)
+        # --- Controller ---
+        self.controller = ServerController()
 
         # --- UI ---
         self._setup_ui()
@@ -93,6 +43,10 @@ class ServerWindow(QMainWindow):
         self.cpu_data = []
         self.ram_data = []
         self.sample_index = 0  # folosit ca X (0,1,2,...)
+
+        # conectăm semnalele controllerului la view
+        self.controller.realtime_signal.connect(self.update_realtime_charts)
+        self.controller.metrics_signal.connect(self.update_final_metrics)
 
     # ==========================
     # UI setup
@@ -183,27 +137,19 @@ class ServerWindow(QMainWindow):
     # ==========================
     # Server control
     # ==========================
-    def start_server(self):
-        if self.server_thread is not None and self.server_thread.is_alive():
-            return
 
+    def start_server(self):
         # resetăm graficele când pornim serverul (opțional)
         self.reset_charts()
-
-        self.server_thread = ServerThread(
-            self.server_core,
-            self.log_emitter,
-            self.metrics_emitter
-        )
-        self.server_thread.start()
-
+        self.controller.start_server()
         self.status_label.setText("Status: Running")
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
         self.update_log("[INFO] Server started.")
 
+
     def stop_server(self):
-        self.server_core.stop()
+        self.controller.stop_server()
         self.status_label.setText("Status: Stopped")
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)

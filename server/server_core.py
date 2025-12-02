@@ -1,12 +1,16 @@
+
 import socket
 import os
 import threading
 import time
 import psutil
 from .server_model import FileTransferMetrics
+from typing import Callable, Optional
 
 
 class ServerCore:
+    on_realtime_metrics: Optional[Callable[[float, float, float], None]] = None
+    on_final_metrics: Optional[Callable[[dict], None]] = None
     def __init__(self, host=None, port=5000, save_dir="received_files"):
         self.host = host or socket.gethostname()
         self.port = port
@@ -14,15 +18,16 @@ class ServerCore:
         self.is_running = False
         self.save_dir = save_dir
 
-        # emitter pentru conexiunea cu GUI
-        self.metrics_emitter = None
+
+        # Callbacks for metrics reporting
+        self.on_realtime_metrics = None  # function(throughput, cpu, ram)
+        self.on_final_metrics = None     # function(metrics_dict)
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
-    def set_metrics_emitter(self, metrics_emitter):
-        """Conectăm ServerCore la MetricsEmitter din GUI."""
-        self.metrics_emitter = metrics_emitter
+
+    # Removed set_metrics_emitter; use callbacks instead
 
     def start(self):
         self.server_socket = socket.socket()
@@ -109,15 +114,15 @@ class ServerCore:
 
                         last_sample_time = now
 
-                        if self.metrics_emitter is not None:
+                        if self.on_realtime_metrics is not None:
                             try:
-                                self.metrics_emitter.realtime_signal.emit(
+                                self.on_realtime_metrics(
                                     float(current_throughput),
                                     float(cpu_val),
                                     float(ram_val),
                                 )
                             except Exception as e:
-                                print(f"[WARN] realtime emit failed: {e}")
+                                print(f"[WARN] realtime metrics callback failed: {e}")
 
             stop_time = time.time()
             total_transfer_time = stop_time - start_time
@@ -155,11 +160,11 @@ class ServerCore:
             print(f"File saved: {file_path}")
             print("Transfer metrics:", metrics.to_dict())
 
-            if self.metrics_emitter is not None:
+            if self.on_final_metrics is not None:
                 try:
-                    self.metrics_emitter.metrics_signal.emit(metrics.to_dict())
+                    self.on_final_metrics(metrics.to_dict())
                 except Exception as e:
-                    print(f"[WARN] final emit failed: {e}")
+                    print(f"[WARN] final metrics callback failed: {e}")
 
         except Exception as e:
             print(f"Error handling client {addr}: {e}")
@@ -172,3 +177,4 @@ class ServerCore:
         if self.server_socket:
             self.server_socket.close()
         print("Server Oprit.")
+
