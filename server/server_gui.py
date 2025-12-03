@@ -1,6 +1,5 @@
 import sys
 import threading
-
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -13,17 +12,8 @@ from PyQt5.QtWidgets import (
     QGridLayout,
 )
 from PyQt5.QtCore import pyqtSignal, QObject
-
 from server.server_controller import ServerController
-
 import pyqtgraph as pg
-
-
-
-# Emitters moved to server_emitter.py
-from server.server_emitter import LogEmitter, MetricsEmitter
-
-
 
 
 class ServerWindow(QMainWindow):
@@ -38,13 +28,12 @@ class ServerWindow(QMainWindow):
         # --- UI ---
         self._setup_ui()
 
-        # --- data pentru grafice ---
         self.throughput_data = []
         self.cpu_data = []
         self.ram_data = []
-        self.sample_index = 0  # folosit ca X (0,1,2,...)
+        self.sample_index = 0 
 
-        # conectăm semnalele controllerului la view
+        # --- Signals ---
         self.controller.realtime_signal.connect(self.update_realtime_charts)
         self.controller.metrics_signal.connect(self.update_final_metrics)
 
@@ -52,14 +41,11 @@ class ServerWindow(QMainWindow):
     # UI setup
     # ==========================
     def _setup_ui(self):
-        # butoane și status
         self.start_button = QPushButton("Start Server")
         self.stop_button = QPushButton("Stop Server")
         self.stop_button.setEnabled(False)
 
         self.status_label = QLabel("Status: Stopped")
-
-        # tab widget
         self.tabs = QTabWidget()
 
         # TAB 1: Logs
@@ -74,13 +60,13 @@ class ServerWindow(QMainWindow):
         metrics_tab = QWidget()
         metrics_layout = QVBoxLayout()
 
-        # zona text pentru metrics finale
+        #QTextEdit for final metrics
         self.metrics_text = QTextEdit()
         self.metrics_text.setReadOnly(True)
         self.metrics_text.setPlaceholderText("Transfer metrics will appear here after a file is received.")
         metrics_layout.addWidget(self.metrics_text)
 
-        # grafice în grid: 2 x 2 (folosim doar 3)
+        # Charts area
         charts_grid = QGridLayout()
 
         # Throughput plot
@@ -115,11 +101,11 @@ class ServerWindow(QMainWindow):
 
         metrics_tab.setLayout(metrics_layout)
 
-        # adăugăm tab-urile în QTabWidget
+        #adding tabs to main tab widget
         self.tabs.addTab(logs_tab, "Logs")
         self.tabs.addTab(metrics_tab, "Metrics & Charts")
 
-        # layout principal
+        # main layout
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.start_button)
         main_layout.addWidget(self.stop_button)
@@ -130,7 +116,7 @@ class ServerWindow(QMainWindow):
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
-        # conectăm butoanele
+        # button actions
         self.start_button.clicked.connect(self.start_server)
         self.stop_button.clicked.connect(self.stop_server)
 
@@ -139,7 +125,7 @@ class ServerWindow(QMainWindow):
     # ==========================
 
     def start_server(self):
-        # resetăm graficele când pornim serverul (opțional)
+        # reset charts data when starting or restarting the server
         self.reset_charts()
         self.controller.start_server()
         self.status_label.setText("Status: Running")
@@ -208,8 +194,3 @@ class ServerWindow(QMainWindow):
         self.metrics_text.setPlainText("\n".join(text_lines))
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = ServerWindow()
-    window.show()
-    sys.exit(app.exec_())

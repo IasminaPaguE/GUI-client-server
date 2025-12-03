@@ -4,7 +4,7 @@ class ClientWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Client GUI - File Transfer Analyzer")
-        self.setGeometry(200, 200, 600, 400)
+        self.setGeometry(200, 200, 900, 600)
 
         self.select_button = QPushButton("Select File/Directory")
         self.send_button = QPushButton("Send to Server")

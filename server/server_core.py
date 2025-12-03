@@ -11,6 +11,8 @@ from typing import Callable, Optional
 class ServerCore:
     on_realtime_metrics: Optional[Callable[[float, float, float], None]] = None
     on_final_metrics: Optional[Callable[[dict], None]] = None
+
+
     def __init__(self, host=None, port=5000, save_dir="received_files"):
         self.host = host or socket.gethostname()
         self.port = port
@@ -26,8 +28,6 @@ class ServerCore:
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
-
-    # Removed set_metrics_emitter; use callbacks instead
 
     def start(self):
         self.server_socket = socket.socket()
