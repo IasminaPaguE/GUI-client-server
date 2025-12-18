@@ -35,9 +35,13 @@ class ServerCore:
         self.server_socket.listen(5)
         print(f"Server is listening on {self.host}:{self.port}")
         self.is_running = True
+        print('PID server:', os.getpid())
 
         while self.is_running:
-            conn, addr = self.server_socket.accept()
+            try:
+                conn, addr = self.server_socket.accept()
+            except OSError:
+                break
             print(f"Connection from {addr}")
 
             client_thread = threading.Thread(
