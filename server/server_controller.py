@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from .server_core import ServerCore
 import threading
+from db.database_logger import DatabaseLogger
 
 class ServerController(QObject):
     # Qt signals for the view
@@ -11,6 +12,7 @@ class ServerController(QObject):
         super().__init__()
         self.server_core = ServerCore(host, port, save_dir)
         self.server_thread = None
+        self.db_logger = DatabaseLogger()
         self._setup_callbacks()
 
     def _setup_callbacks(self):
@@ -23,6 +25,11 @@ class ServerController(QObject):
 
     def _emit_final_metrics(self, metrics_dict):
         self.metrics_signal.emit(metrics_dict)
+
+        try:
+            self.db_logger.insert_metrics(metrics_dict)
+        except Exception as e:
+            print(f"[WARN] Could not save metrics to DB: {e}")
 
     def start_server(self):
         if self.server_thread is None or not self.server_thread.is_alive():
