@@ -45,7 +45,7 @@ if __name__ == '__main__':
         # GET THE CONNECTION OBJECT (ENGINE) FOR THE DATABASE
         engine = get_connection()
         print(
-            f"Connection to the host localhost for user ${{POSTGRES_USER}} created successfully.")
+            f"Connection created successfully.")
     except Exception as ex:
         print("Connection could not be made due to the following error: \n", ex)
 

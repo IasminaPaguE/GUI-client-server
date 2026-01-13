@@ -3,3 +3,4 @@ psutil
 pyqtgraph
 python-dotenv
 psycopg2
+SQLAlchemy
