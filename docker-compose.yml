@@ -1,23 +1,29 @@
-version: "3.9"
-
+version: "3.8"
 services:
-  postgres:
+  db:
     image: postgres:16
-    container_name: filetransfer_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: secretpass
-      POSTGRES_DB: filetransfer
+    container_name: local_pgdb
+    restart: always
     ports:
       - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d filetransfer"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - local_pgdata:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
 
 volumes:
-  postgres_data:
+  local_pgdata:
+  pgadmin-data:
