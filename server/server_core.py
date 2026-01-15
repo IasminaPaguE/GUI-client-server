@@ -6,6 +6,8 @@ import time
 import psutil
 from .server_model import FileTransferMetrics
 from typing import Callable, Optional
+from db.database import SessionLocal, get_session
+from db.transfer_metrics_model import TransferMetrics
 
 
 class ServerCore:
@@ -19,6 +21,7 @@ class ServerCore:
         self.server_socket = None
         self.is_running = False
         self.save_dir = save_dir
+        # self.sessionLocal = SessionLocal()
 
 
         # Callbacks for metrics reporting
@@ -160,9 +163,11 @@ class ServerCore:
                 cpu_usage_samples=cpu_samples,
                 ram_usage_samples=ram_samples,
             )
-
-            print(f"File saved: {file_path}")
-            print("Transfer metrics:", metrics.to_dict())
+            
+            # print(f"File saved: {file_path}")
+            # print("Transfer metrics:", metrics.to_dict())
+            with get_session() as db:
+                db.add(TransferMetrics(**metrics.to_dict()))
 
             if self.on_final_metrics is not None:
                 try:
